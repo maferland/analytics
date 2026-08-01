@@ -65,7 +65,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     selectedProjectNames.includes(project.name),
   )
   const traffic = summarizeTraffic(selectedProjects)
-  const trafficConnected = !data.traffic.error
+  const trafficConnected = data.traffic.projects.length > 0
+  const trafficIsPartial = Boolean(data.traffic.error || data.traffic.warning)
   const npmDownloads = data.npm.packages.reduce(
     (sum, packageMetric) => sum + packageMetric.downloads,
     0,
@@ -88,8 +89,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             maferland.com
           </a>
           <p className="status">
-            <span className={trafficConnected ? 'status-dot' : 'status-dot muted'} />
-            {trafficConnected ? 'Live aggregate data' : 'Partial data'}
+            <span
+              className={trafficIsPartial ? 'status-dot muted' : 'status-dot'}
+            />
+            {trafficIsPartial ? 'Partial data' : 'Live aggregate data'}
           </p>
         </header>
 
@@ -184,7 +187,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           {data.traffic.error ? (
             <p className="connection-note">{data.traffic.error}</p>
           ) : (
-            <TrafficChart series={traffic.series} />
+            <>
+              {data.traffic.warning ? (
+                <p className="connection-note">{data.traffic.warning}</p>
+              ) : null}
+              <TrafficChart series={traffic.series} />
+            </>
           )}
         </section>
 

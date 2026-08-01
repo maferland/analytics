@@ -10,6 +10,7 @@ const dashboardData = {
   period: { since: '2026-07-01', until: '2026-07-30' },
   traffic: {
     error: null,
+    warning: null,
     projects: [
       {
         name: 'maferland.com',

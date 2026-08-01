@@ -41,6 +41,7 @@ export type DashboardData = {
   traffic: {
     error: string | null
     projects: ProjectMetric[]
+    warning: string | null
   }
   updatedAt: string
 }
@@ -77,6 +78,7 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
     return {
       error: 'Traffic data is not yet connected.',
       projects: [],
+      warning: null,
     }
   }
 
@@ -103,24 +105,46 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
   })
 
   try {
-    const responses = await Promise.all(requests)
-    const projects = responses.map(({ name, series }) => {
+    const responses = await Promise.allSettled(requests)
+    const unavailableProjects = responses.flatMap((response, index) =>
+      response.status === 'rejected' ? [vercelProjects[index].name] : [],
+    )
+    const projects = responses.flatMap(response => {
+      if (response.status === 'rejected') {
+        return []
+      }
+
       let pageviews = 0
       let visitors = 0
 
-      for (const point of series) {
+      for (const point of response.value.series) {
         pageviews += point.pageviews
         visitors += point.visitors
       }
 
-      return { name, pageviews, series, visitors }
+      return [{ name: response.value.name, pageviews, series: response.value.series, visitors }]
     })
 
-    return { error: null, projects }
-  } catch (error) {
+    if (!projects.length) {
+      return {
+        error: 'Traffic data is temporarily unavailable.',
+        projects: [],
+        warning: null,
+      }
+    }
+
     return {
-      error: error instanceof Error ? error.message : 'Unable to load traffic data.',
+      error: null,
+      projects,
+      warning: unavailableProjects.length
+        ? `Traffic is unavailable for ${unavailableProjects.join(', ')}.`
+        : null,
+    }
+  } catch {
+    return {
+      error: 'Traffic data is temporarily unavailable.',
       projects: [],
+      warning: null,
     }
   }
 }
@@ -169,6 +193,6 @@ const loadDashboardData = async (): Promise<DashboardData> => {
   }
 }
 
-export const getDashboardData = unstable_cache(loadDashboardData, ['analytics-v2'], {
+export const getDashboardData = unstable_cache(loadDashboardData, ['analytics-v3'], {
   revalidate: 5 * 60,
 })
