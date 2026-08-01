@@ -228,6 +228,85 @@ h1 {
   margin-top: 6px;
 }
 
+.filter-panel {
+  margin-bottom: 24px;
+}
+
+.project-filter {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.filter-actions button {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: uppercase;
+}
+
+.filter-actions button:hover {
+  color: var(--signal);
+}
+
+.filter-actions button:focus-visible,
+.filter-option input:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-option {
+  align-items: center;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  gap: 8px;
+  padding: 9px 11px;
+}
+
+.filter-option:has(input:checked) {
+  background: var(--signal-pale);
+  border-color: var(--signal);
+}
+
+.filter-option input {
+  accent-color: var(--signal);
+  height: 14px;
+  margin: 0;
+  width: 14px;
+}
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .detail-grid {
   display: grid;
   gap: 24px;

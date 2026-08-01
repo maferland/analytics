@@ -7,7 +7,7 @@ It currently pulls aggregate traffic from Vercel and download counts from npm. T
 ## What it shows
 
 - Visitors and pageviews across selected Vercel projects for the last 30 days
-- A daily pageview trend
+- A daily pageview trend that updates when projects are selected or cleared
 - Per-project traffic totals
 - npm downloads for an explicit package allowlist
 
@@ -20,6 +20,12 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+Run the filter test with:
+
+```bash
+npm test
+```
 
 The npm section works after setting `ANALYTICS_NPM_PACKAGES`. Vercel traffic also needs a personal access token with access to the tracked projects.
 

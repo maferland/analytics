@@ -25,6 +25,7 @@ type NpmDownloadsResponse = {
 export type ProjectMetric = {
   name: string
   pageviews: number
+  series: TrafficPoint[]
   visitors: number
 }
 
@@ -40,7 +41,6 @@ export type DashboardData = {
   traffic: {
     error: string | null
     projects: ProjectMetric[]
-    series: TrafficPoint[]
   }
   updatedAt: string
 }
@@ -77,7 +77,6 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
     return {
       error: 'Traffic data is not yet connected.',
       projects: [],
-      series: [],
     }
   }
 
@@ -105,7 +104,6 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
 
   try {
     const responses = await Promise.all(requests)
-    const pointsByDate = new Map<string, TrafficPoint>()
     const projects = responses.map(({ name, series }) => {
       let pageviews = 0
       let visitors = 0
@@ -113,29 +111,16 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
       for (const point of series) {
         pageviews += point.pageviews
         visitors += point.visitors
-        const existing = pointsByDate.get(point.timestamp)
-        pointsByDate.set(point.timestamp, {
-          pageviews: (existing?.pageviews ?? 0) + point.pageviews,
-          timestamp: point.timestamp,
-          visitors: (existing?.visitors ?? 0) + point.visitors,
-        })
       }
 
-      return { name, pageviews, visitors }
+      return { name, pageviews, series, visitors }
     })
 
-    return {
-      error: null,
-      projects,
-      series: [...pointsByDate.values()].sort((left, right) =>
-        left.timestamp.localeCompare(right.timestamp),
-      ),
-    }
+    return { error: null, projects }
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Unable to load traffic data.',
       projects: [],
-      series: [],
     }
   }
 }
