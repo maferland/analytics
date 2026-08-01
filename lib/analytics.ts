@@ -169,6 +169,6 @@ const loadDashboardData = async (): Promise<DashboardData> => {
   }
 }
 
-export const getDashboardData = unstable_cache(loadDashboardData, ['analytics'], {
-  revalidate: 60 * 60,
+export const getDashboardData = unstable_cache(loadDashboardData, ['analytics-v2'], {
+  revalidate: 5 * 60,
 })

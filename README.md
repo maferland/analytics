@@ -35,7 +35,7 @@ VERCEL_ANALYTICS_TEAM_ID=mafer
 ANALYTICS_NPM_PACKAGES=@scope/package,another-package
 ```
 
-`VERCEL_ANALYTICS_TOKEN` stays on the server. The page fetches source data once per hour, then serves the cached aggregate result.
+`VERCEL_ANALYTICS_TOKEN` stays on the server. The page fetches source data every five minutes, then serves the cached aggregate result.
 
 ## Deploy
 
