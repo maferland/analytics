@@ -1,20 +1,33 @@
 import type { ProjectMetric, TrafficPoint } from './analytics'
 
+export type TrafficWindowDays = 7 | 14 | 30
+
 export type TrafficSummary = {
   pageviews: number
+  previous: {
+    pageviews: number
+    visitors: number
+  } | null
   series: TrafficPoint[]
   visitors: number
 }
 
-export const summarizeTraffic = (projects: ProjectMetric[]): TrafficSummary => {
+const summarizePoints = (points: TrafficPoint[]) =>
+  points.reduce(
+    (summary, point) => ({
+      pageviews: summary.pageviews + point.pageviews,
+      visitors: summary.visitors + point.visitors,
+    }),
+    { pageviews: 0, visitors: 0 },
+  )
+
+export const summarizeTraffic = (
+  projects: ProjectMetric[],
+  windowDays: TrafficWindowDays = 30,
+): TrafficSummary => {
   const pointsByDate = new Map<string, TrafficPoint>()
-  let pageviews = 0
-  let visitors = 0
 
   for (const project of projects) {
-    pageviews += project.pageviews
-    visitors += project.visitors
-
     for (const point of project.series) {
       const existing = pointsByDate.get(point.timestamp)
       pointsByDate.set(point.timestamp, {
@@ -25,11 +38,16 @@ export const summarizeTraffic = (projects: ProjectMetric[]): TrafficSummary => {
     }
   }
 
+  const series = [...pointsByDate.values()].sort((left, right) =>
+    left.timestamp.localeCompare(right.timestamp),
+  )
+  const windowSeries = series.slice(-windowDays)
+  const previousSeries = series.slice(-2 * windowDays, -windowDays)
+
   return {
-    pageviews,
-    series: [...pointsByDate.values()].sort((left, right) =>
-      left.timestamp.localeCompare(right.timestamp),
-    ),
-    visitors,
+    ...summarizePoints(windowSeries),
+    previous:
+      previousSeries.length === windowDays ? summarizePoints(previousSeries) : null,
+    series: windowSeries,
   }
 }

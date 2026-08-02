@@ -173,6 +173,11 @@ h1 {
   margin-top: 18px;
 }
 
+.metric-card .metric-change {
+  color: var(--signal);
+  margin-top: 8px;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--ink);
@@ -226,6 +231,80 @@ h1 {
 .chart-axis {
   justify-content: space-between;
   margin-top: 6px;
+}
+
+.chart-inspector {
+  align-items: baseline;
+  color: var(--muted);
+  display: flex;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 11px;
+  gap: 12px;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.chart-inspector strong {
+  color: var(--ink);
+}
+
+.chart-point {
+  cursor: crosshair;
+  fill: transparent;
+  stroke: transparent;
+}
+
+.chart-point.active {
+  fill: var(--panel);
+  stroke: var(--signal);
+  stroke-width: 3;
+}
+
+.chart-point:focus-visible {
+  fill: var(--signal-pale);
+  outline: none;
+  stroke: var(--signal);
+  stroke-width: 3;
+}
+
+.range-panel {
+  margin-bottom: 24px;
+}
+
+.range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.range-controls button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  padding: 9px 11px;
+  text-transform: uppercase;
+}
+
+.range-controls button:hover,
+.range-controls button.selected {
+  background: var(--signal-pale);
+  border-color: var(--signal);
+  color: var(--ink);
+}
+
+.range-controls button:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+.range-note {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 16px 0 0;
 }
 
 .filter-panel {
@@ -311,6 +390,43 @@ h1 {
   display: grid;
   gap: 24px;
   grid-template-columns: 1.2fr 0.8fr;
+}
+
+.project-detail {
+  grid-column: 1 / -1;
+}
+
+.detail-metrics {
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.detail-metrics > div {
+  min-height: 94px;
+  padding: 14px 16px 14px 0;
+}
+
+.detail-metrics > div + div {
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
+}
+
+.detail-metrics span {
+  color: var(--muted);
+  display: block;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+.detail-metrics strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
 }
 
 .data-table {
@@ -428,6 +544,22 @@ footer {
 
   .table-row {
     grid-template-columns: minmax(0, 1fr) 82px 68px;
+  }
+
+  .chart-inspector {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .detail-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-metrics > div + div {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
   }
 
   footer {

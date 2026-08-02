@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { DashboardData, TrafficPoint } from '@/lib/analytics'
-import { summarizeTraffic } from '@/lib/traffic-summary'
+import { summarizeTraffic, type TrafficWindowDays } from '@/lib/traffic-summary'
 
 const numberFormatter = new Intl.NumberFormat('en-US')
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -22,7 +22,18 @@ const timestampFormatter = new Intl.DateTimeFormat('en-US', {
 
 const formatNumber = (value: number) => numberFormatter.format(value)
 
+const formatDelta = (current: number, previous: number) => {
+  if (!previous) {
+    return 'New'
+  }
+
+  const percentage = Math.round(((current - previous) / previous) * 100)
+  return `${percentage > 0 ? '+' : ''}${percentage}%`
+}
+
 function TrafficChart({ series }: { series: TrafficPoint[] }) {
+  const [activePointIndex, setActivePointIndex] = useState(0)
+
   if (!series.length) {
     return <p className="empty-copy">Select a project to plot its traffic.</p>
   }
@@ -30,24 +41,51 @@ function TrafficChart({ series }: { series: TrafficPoint[] }) {
   const maximum = Math.max(...series.map(point => point.pageviews), 1)
   const width = 720
   const height = 180
-  const points = series
-    .map((point, index) => {
-      const x = (index / Math.max(series.length - 1, 1)) * width
-      const y = height - (point.pageviews / maximum) * (height - 16) - 8
-      return `${x},${y}`
-    })
-    .join(' ')
+  const chartPoints = series.map((point, index) => ({
+    point,
+    x: (index / Math.max(series.length - 1, 1)) * width,
+    y: height - (point.pageviews / maximum) * (height - 16) - 8,
+  }))
+  const activePoint = chartPoints[Math.min(activePointIndex, chartPoints.length - 1)]
 
   return (
     <div className="chart-wrap">
+      <div className="chart-inspector" aria-live="polite">
+        <span>{dateFormatter.format(new Date(activePoint.point.timestamp))}</span>
+        <strong>{formatNumber(activePoint.point.pageviews)} pageviews</strong>
+        <span>{formatNumber(activePoint.point.visitors)} visitors</span>
+      </div>
       <svg
-        aria-label="Daily pageviews over the last 30 days"
+        aria-label="Daily pageviews for the selected period"
         className="chart"
-        role="img"
+        role="group"
         viewBox={`0 0 ${width} ${height}`}
       >
         <line className="chart-guide" x1="0" x2={width} y1="172" y2="172" />
-        <polyline className="chart-line" points={points} />
+        <polyline
+          className="chart-line"
+          points={chartPoints.map(({ x, y }) => `${x},${y}`).join(' ')}
+        />
+        {chartPoints.map(({ point, x, y }, index) => (
+          <circle
+            aria-label={`${dateFormatter.format(new Date(point.timestamp))}: ${formatNumber(point.pageviews)} pageviews, ${formatNumber(point.visitors)} visitors`}
+            className={index === activePointIndex ? 'chart-point active' : 'chart-point'}
+            cx={x}
+            cy={y}
+            key={point.timestamp}
+            onClick={() => setActivePointIndex(index)}
+            onFocus={() => setActivePointIndex(index)}
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                setActivePointIndex(index)
+              }
+            }}
+            onPointerEnter={() => setActivePointIndex(index)}
+            r="7"
+            role="button"
+            tabIndex={0}
+          />
+        ))}
       </svg>
       <div className="chart-axis" aria-hidden="true">
         <span>{dateFormatter.format(new Date(series[0].timestamp))}</span>
@@ -61,10 +99,21 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const [selectedProjectNames, setSelectedProjectNames] = useState(() =>
     data.traffic.projects.map(project => project.name),
   )
+  const [windowDays, setWindowDays] = useState<TrafficWindowDays>(30)
   const selectedProjects = data.traffic.projects.filter(project =>
     selectedProjectNames.includes(project.name),
   )
-  const traffic = summarizeTraffic(selectedProjects)
+  const traffic = summarizeTraffic(selectedProjects, windowDays)
+  const projectTraffic = selectedProjects.map(project => ({
+    project,
+    traffic: summarizeTraffic([project], windowDays),
+  }))
+  const selectedProject = projectTraffic.length === 1 ? projectTraffic[0] : null
+  const busiestDay = selectedProject?.traffic.series.reduce<TrafficPoint | null>(
+    (busiest, point) =>
+      !busiest || point.pageviews > busiest.pageviews ? point : busiest,
+    null,
+  )
   const trafficConnected = data.traffic.projects.length > 0
   const trafficIsPartial = Boolean(data.traffic.error || data.traffic.warning)
   const npmDownloads = data.npm.packages.reduce(
@@ -151,16 +200,58 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           )}
         </section>
 
-        <section className="metrics" aria-label="Last 30 days" aria-live="polite">
+        <section className="panel range-panel" aria-labelledby="range-title">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Window</p>
+              <h2 id="range-title">Traffic period</h2>
+            </div>
+            <span>{windowDays} days</span>
+          </div>
+          <div aria-label="Select traffic period" className="range-controls" role="group">
+            {([7, 14, 30] as const).map(days => (
+              <button
+                aria-pressed={windowDays === days}
+                className={windowDays === days ? 'selected' : undefined}
+                key={days}
+                onClick={() => setWindowDays(days)}
+                type="button"
+              >
+                {days} days
+              </button>
+            ))}
+          </div>
+          <p className="range-note">
+            {traffic.previous
+              ? `Changes compare this window with the preceding ${windowDays} days.`
+              : 'A matching prior period is not available for this window.'}
+          </p>
+        </section>
+
+        <section
+          className="metrics"
+          aria-label={`Last ${windowDays} days`}
+          aria-live="polite"
+        >
           <article aria-label="Selected visitors" className="metric-card">
             <p>Visitors</p>
             <strong>{trafficConnected ? formatNumber(traffic.visitors) : '—'}</strong>
-            <span>Selected Vercel projects · 30 days</span>
+            <span>Selected Vercel projects · {windowDays} days</span>
+            <span className="metric-change">
+              {traffic.previous
+                ? `${formatDelta(traffic.visitors, traffic.previous.visitors)} vs prior ${windowDays}d`
+                : 'No prior period'}
+            </span>
           </article>
           <article aria-label="Selected pageviews" className="metric-card">
             <p>Pageviews</p>
             <strong>{trafficConnected ? formatNumber(traffic.pageviews) : '—'}</strong>
-            <span>Selected Vercel projects · 30 days</span>
+            <span>Selected Vercel projects · {windowDays} days</span>
+            <span className="metric-change">
+              {traffic.previous
+                ? `${formatDelta(traffic.pageviews, traffic.previous.pageviews)} vs prior ${windowDays}d`
+                : 'No prior period'}
+            </span>
           </article>
           <article aria-label="npm downloads" className="metric-card">
             <p>npm downloads</p>
@@ -180,8 +271,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <h2 id="traffic-title">Daily pageviews</h2>
             </div>
             <p>
-              {dateFormatter.format(new Date(data.period.since))} to{' '}
-              {dateFormatter.format(new Date(data.period.until))}
+              {traffic.series.length
+                ? `${dateFormatter.format(new Date(traffic.series[0].timestamp))} to ${dateFormatter.format(new Date(traffic.series.at(-1)!.timestamp))}`
+                : 'No projects selected'}
             </p>
           </div>
           {data.traffic.error ? (
@@ -203,7 +295,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <p className="eyebrow">Projects</p>
                 <h2 id="projects-title">Traffic by app</h2>
               </div>
-              <span>{selectedProjects.length} in view</span>
+              <span>
+                {selectedProjects.length} in view · {windowDays} days
+              </span>
             </div>
             {selectedProjects.length ? (
               <div className="data-table" role="table">
@@ -212,11 +306,11 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   <span role="columnheader">Visitors</span>
                   <span role="columnheader">Views</span>
                 </div>
-                {selectedProjects.map(project => (
+                {projectTraffic.map(({ project, traffic: projectSummary }) => (
                   <div className="table-row" key={project.name} role="row">
                     <span role="cell">{project.name}</span>
-                    <span role="cell">{formatNumber(project.visitors)}</span>
-                    <span role="cell">{formatNumber(project.pageviews)}</span>
+                    <span role="cell">{formatNumber(projectSummary.visitors)}</span>
+                    <span role="cell">{formatNumber(projectSummary.pageviews)}</span>
                   </div>
                 ))}
               </div>
@@ -250,6 +344,47 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <p className="empty-copy">Package totals appear after packages are selected.</p>
             )}
           </section>
+
+          {selectedProject ? (
+            <section className="panel project-detail" aria-labelledby="project-detail-title">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">App detail</p>
+                  <h2 id="project-detail-title">{selectedProject.project.name}</h2>
+                </div>
+                <span>{windowDays} days</span>
+              </div>
+              <div className="detail-metrics">
+                <div>
+                  <span>Views / visitor</span>
+                  <strong>
+                    {selectedProject.traffic.visitors
+                      ? (selectedProject.traffic.pageviews / selectedProject.traffic.visitors).toFixed(2)
+                      : '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span>Strongest day</span>
+                  <strong>
+                    {busiestDay
+                      ? `${dateFormatter.format(new Date(busiestDay.timestamp))} · ${formatNumber(busiestDay.pageviews)}`
+                      : '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span>Pageview change</span>
+                  <strong>
+                    {selectedProject.traffic.previous
+                      ? formatDelta(
+                          selectedProject.traffic.pageviews,
+                          selectedProject.traffic.previous.pageviews,
+                        )
+                      : 'No prior period'}
+                  </strong>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </div>
 
         <footer>

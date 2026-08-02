@@ -61,7 +61,7 @@ describe('DashboardClient', () => {
     expect(screen.getByRole('cell', { name: 'maferland.com' })).toBeTruthy()
     expect(screen.getByRole('cell', { name: 'pinpoint' })).toBeTruthy()
     const initialChartPoints = screen
-      .getByRole('img', { name: 'Daily pageviews over the last 30 days' })
+      .getByRole('group', { name: 'Daily pageviews for the selected period' })
       .querySelector('polyline')
       ?.getAttribute('points')
 
@@ -77,9 +77,14 @@ describe('DashboardClient', () => {
     expect(screen.queryByRole('cell', { name: 'pinpoint' })).toBeNull()
     expect(
       screen
-        .getByRole('img', { name: 'Daily pageviews over the last 30 days' })
+        .getByRole('group', { name: 'Daily pageviews for the selected period' })
         .querySelector('polyline')
         ?.getAttribute('points'),
     ).not.toBe(initialChartPoints)
+    await user.click(screen.getByRole('button', { name: '7 days' }))
+
+    expect(screen.getByRole('button', { name: '7 days' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
   })
 })
