@@ -6,9 +6,10 @@ It currently pulls aggregate traffic from Vercel and download counts from npm. T
 
 ## What it shows
 
-- Visitors and pageviews across selected Vercel projects for the last 30 days
-- A daily pageview trend that updates when projects are selected or cleared
-- Per-project traffic totals
+- Visitors and pageviews across selected Vercel projects
+- 7, 14, and 30-day windows with comparisons to the preceding period when available
+- An inspectable daily chart: hover, click, or tab through points for each day
+- A single-project detail panel with views per visitor, strongest day, and pageview change
 - npm downloads for an explicit package allowlist
 
 ## Run it locally
