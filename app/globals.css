@@ -105,6 +105,26 @@ footer,
   color: var(--signal);
 }
 
+.table-row a,
+.npm-row a {
+  color: var(--ink);
+  text-decoration-color: var(--line);
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 0.2em;
+}
+
+.table-row a:hover,
+.npm-row a:hover {
+  color: var(--signal);
+  text-decoration-color: currentColor;
+}
+
+.table-row a:focus-visible,
+.npm-row a:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
 .status,
 .eyebrow,
 .metric-card p,

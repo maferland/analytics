@@ -1,12 +1,22 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { DashboardClient } from './DashboardClient'
 
 const dashboardData = {
-  npm: { error: null, packages: [] },
+  npm: {
+    error: null,
+    packages: [
+      {
+        downloads: 400,
+        end: '2026-07-30',
+        package: '@maferland/keyhole',
+        start: '2026-07-01',
+      },
+    ],
+  },
   period: { since: '2026-07-01', until: '2026-07-30' },
   traffic: {
     error: null,
@@ -27,6 +37,7 @@ const dashboardData = {
             visitors: 500,
           },
         ],
+        url: 'https://www.maferland.com',
         visitors: 900,
       },
       {
@@ -44,6 +55,7 @@ const dashboardData = {
             visitors: 400,
           },
         ],
+        url: 'https://pinpoint.maferland.com',
         visitors: 650,
       },
     ],
@@ -60,6 +72,17 @@ describe('DashboardClient', () => {
     expect(screen.getByText('1,550')).toBeTruthy()
     expect(screen.getByRole('cell', { name: 'maferland.com' })).toBeTruthy()
     expect(screen.getByRole('cell', { name: 'pinpoint' })).toBeTruthy()
+
+    expect(
+      within(screen.getByRole('cell', { name: 'maferland.com' }))
+        .getByRole('link')
+        .getAttribute('href')
+    ).toBe('https://www.maferland.com')
+    expect(
+      screen
+        .getByRole('link', { name: '@maferland/keyhole' })
+        .getAttribute('href')
+    ).toBe('https://www.npmjs.com/package/@maferland/keyhole')
     const initialChartPoints = screen
       .getByRole('group', { name: 'Daily pageviews for the selected period' })
       .querySelector('polyline')

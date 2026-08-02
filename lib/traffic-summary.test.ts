@@ -9,7 +9,15 @@ describe('summarizeTraffic', () => {
       visitors: 1,
     }))
     const summary = summarizeTraffic(
-      [{ name: 'keyhole', pageviews: 105, series, visitors: 14 }],
+      [
+        {
+          name: 'keyhole',
+          pageviews: 105,
+          series,
+          url: 'https://keyhole.maferland.com',
+          visitors: 14,
+        },
+      ],
       7
     )
 

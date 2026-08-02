@@ -9,6 +9,7 @@ export type TrafficPoint = {
 type VercelProject = {
   id: string
   name: string
+  url: string
 }
 
 type VercelTrafficResponse = {
@@ -26,6 +27,7 @@ export type ProjectMetric = {
   name: string
   pageviews: number
   series: TrafficPoint[]
+  url: string
   visitors: number
 }
 
@@ -47,12 +49,36 @@ export type DashboardData = {
 }
 
 const vercelProjects: readonly VercelProject[] = [
-  { id: 'prj_nSRjqmUpdzUKFM1S5chj4HgOXatj', name: 'maferland.com' },
-  { id: 'prj_7DZmkzRbTV0P2x90kn08dGIh7cMB', name: 'quebec.run' },
-  { id: 'prj_82RN8gmWtdQJnGldcGNtVRljPLsP', name: 'mise' },
-  { id: 'prj_FKIBBDA57Qr2FNQqYKKniP7FnAgG', name: 'keyhole' },
-  { id: 'prj_6glEwCmYV1KMgJO25TF3N3bsgmb1', name: 'pinpoint' },
-  { id: 'prj_jIhnT8qD2idQGjxdgcsFwJYYDdup', name: 'snip' },
+  {
+    id: 'prj_nSRjqmUpdzUKFM1S5chj4HgOXatj',
+    name: 'maferland.com',
+    url: 'https://www.maferland.com',
+  },
+  {
+    id: 'prj_7DZmkzRbTV0P2x90kn08dGIh7cMB',
+    name: 'quebec.run',
+    url: 'https://www.quebec.run',
+  },
+  {
+    id: 'prj_82RN8gmWtdQJnGldcGNtVRljPLsP',
+    name: 'mise',
+    url: 'https://mise.maferland.com',
+  },
+  {
+    id: 'prj_FKIBBDA57Qr2FNQqYKKniP7FnAgG',
+    name: 'keyhole',
+    url: 'https://keyhole.maferland.com',
+  },
+  {
+    id: 'prj_6glEwCmYV1KMgJO25TF3N3bsgmb1',
+    name: 'pinpoint',
+    url: 'https://pinpoint.maferland.com',
+  },
+  {
+    id: 'prj_jIhnT8qD2idQGjxdgcsFwJYYDdup',
+    name: 'snip',
+    url: 'https://snip.maferland.com',
+  },
 ]
 
 const millisecondsPerDay = 24 * 60 * 60 * 1000
@@ -101,7 +127,7 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
     }
 
     const payload = (await response.json()) as VercelTrafficResponse
-    return { name: project.name, series: payload.data }
+    return { name: project.name, series: payload.data, url: project.url }
   })
 
   try {
@@ -127,6 +153,7 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
           name: response.value.name,
           pageviews,
           series: response.value.series,
+          url: response.value.url,
           visitors,
         },
       ]

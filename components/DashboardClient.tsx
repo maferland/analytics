@@ -135,7 +135,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 </div>
                 {projectTraffic.map(({ project, traffic: projectSummary }) => (
                   <div className="table-row" key={project.name} role="row">
-                    <span role="cell">{project.name}</span>
+                    <span role="cell">
+                      <a href={project.url}>{project.name}</a>
+                    </span>
                     <span role="cell">
                       {formatNumber(projectSummary.visitors)}
                     </span>
@@ -162,7 +164,11 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <div className="npm-list">
                 {data.npm.packages.map((packageMetric) => (
                   <div className="npm-row" key={packageMetric.package}>
-                    <code>{packageMetric.package}</code>
+                    <a
+                      href={`https://www.npmjs.com/package/${packageMetric.package}`}
+                    >
+                      <code>{packageMetric.package}</code>
+                    </a>
                     <strong>{formatNumber(packageMetric.downloads)}</strong>
                     <span>
                       {dateFormatter.format(new Date(packageMetric.start))} to{' '}
