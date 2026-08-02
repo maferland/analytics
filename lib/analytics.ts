@@ -232,7 +232,7 @@ const loadDashboardData = async (): Promise<DashboardData> => {
 
 export const getDashboardData = unstable_cache(
   loadDashboardData,
-  ['analytics-v3'],
+  ['analytics-v4'],
   {
     revalidate: 5 * 60,
   }
