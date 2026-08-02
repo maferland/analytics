@@ -1,34 +1,32 @@
-# analytics.maferland.com
+<div align="center">
+<h1>📈 analytics.maferland.com</h1>
 
-A small public ledger for the projects I ship.
+<p>Public aggregate metrics for Marc-Antoine Ferland's projects.</p>
+</div>
 
-It currently pulls aggregate traffic from Vercel and download counts from npm. The dashboard deliberately leaves out the interesting-but-creepy stuff: no paths, referrers, countries, or visitor-level records. Revenue can join later when there is a source worth connecting.
+---
 
-## What it shows
+Compare selected projects' traffic and package downloads without exposing visitor-level activity.
 
-- Visitors and pageviews across selected Vercel projects
-- 7, 14, and 30-day windows with comparisons to the preceding period when available
-- An inspectable daily chart: hover, click, or tab through points for each day
-- A single-project detail panel with views per visitor, strongest day, and pageview change
-- npm downloads for an explicit package allowlist
+## Prerequisites
 
-## Run it locally
+- [Bun](https://bun.sh) 1.3+
+- A Vercel access token with access to every tracked project
+
+## Install
 
 ```bash
-npm install
+bun install
 cp .env.example .env.local
-npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-Run the filter test with:
+## Usage
 
 ```bash
-npm test
+bun run dev
 ```
 
-The npm section works after setting `ANALYTICS_NPM_PACKAGES`. Vercel traffic also needs a personal access token with access to the tracked projects.
+Open [http://localhost:3000](http://localhost:3000). Configure:
 
 ```bash
 VERCEL_ANALYTICS_TOKEN=
@@ -36,13 +34,21 @@ VERCEL_ANALYTICS_TEAM_ID=mafer
 ANALYTICS_NPM_PACKAGES=@scope/package,another-package
 ```
 
-`VERCEL_ANALYTICS_TOKEN` stays on the server. The page fetches source data every five minutes, then serves the cached aggregate result.
+Select projects and a 7, 14, or 30-day window. Inspect daily chart points by pointer or keyboard. The page caches aggregate provider results for five minutes.
 
-## Deploy
+## Privacy
 
-The project deploys on Vercel. Set the same environment variables for production, then assign `analytics.maferland.com` to the project. The dashboard is designed to stay public, so only add metrics you are comfortable publishing.
+The dashboard shows aggregate visitors, pageviews, and package downloads. It intentionally excludes paths, referrers, countries, visitor-level records, and revenue.
+
+## Requirements
+
+Production uses Vercel. Configure the same environment variables, then assign `analytics.maferland.com` to the project.
 
 ## Sources
 
 - [Vercel Web Analytics API](https://vercel.com/docs/analytics/web-analytics-api)
 - [npm downloads API](https://api.npmjs.org/downloads/point/last-month/@vercel/analytics)
+
+## License
+
+[MIT](LICENSE)

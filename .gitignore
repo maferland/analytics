@@ -1,4 +1,9 @@
-.vercel
+.vercel/
 .env*
-.next
-node_modules
+.next/
+node_modules/
+coverage/
+*.tsbuildinfo
+.agents/
+.claude/
+skills-lock.json

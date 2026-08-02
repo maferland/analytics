@@ -68,10 +68,10 @@ describe('DashboardClient', () => {
     await user.click(screen.getByRole('checkbox', { name: 'pinpoint' }))
 
     expect(
-      screen.getByRole('article', { name: 'Selected pageviews' }).textContent,
+      screen.getByRole('article', { name: 'Selected pageviews' }).textContent
     ).toContain('1,250')
     expect(
-      screen.getByRole('article', { name: 'Selected visitors' }).textContent,
+      screen.getByRole('article', { name: 'Selected visitors' }).textContent
     ).toContain('900')
     expect(screen.getByRole('cell', { name: 'maferland.com' })).toBeTruthy()
     expect(screen.queryByRole('cell', { name: 'pinpoint' })).toBeNull()
@@ -79,12 +79,14 @@ describe('DashboardClient', () => {
       screen
         .getByRole('group', { name: 'Daily pageviews for the selected period' })
         .querySelector('polyline')
-        ?.getAttribute('points'),
+        ?.getAttribute('points')
     ).not.toBe(initialChartPoints)
     await user.click(screen.getByRole('button', { name: '7 days' }))
 
-    expect(screen.getByRole('button', { name: '7 days' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    )
+    expect(
+      screen
+        .getByRole('button', { name: '7 days' })
+        .getAttribute('aria-pressed')
+    ).toBe('true')
   })
 })

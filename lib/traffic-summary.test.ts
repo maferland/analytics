@@ -10,7 +10,7 @@ describe('summarizeTraffic', () => {
     }))
     const summary = summarizeTraffic(
       [{ name: 'keyhole', pageviews: 105, series, visitors: 14 }],
-      7,
+      7
     )
 
     expect(summary.series).toHaveLength(7)

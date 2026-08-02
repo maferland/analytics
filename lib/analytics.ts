@@ -69,7 +69,7 @@ const getPeriod = () => {
 const getNpmPackages = () =>
   (process.env.ANALYTICS_NPM_PACKAGES ?? '')
     .split(/[\n,]/)
-    .map(packageName => packageName.trim())
+    .map((packageName) => packageName.trim())
     .filter(Boolean)
 
 const getVercelTraffic = async (period: DashboardData['period']) => {
@@ -83,7 +83,7 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
   }
 
   const teamId = process.env.VERCEL_ANALYTICS_TEAM_ID ?? 'mafer'
-  const requests = vercelProjects.map(async project => {
+  const requests = vercelProjects.map(async (project) => {
     const params = new URLSearchParams({
       by: 'day',
       projectId: project.id,
@@ -93,7 +93,7 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
     })
     const response = await fetch(
       `https://api.vercel.com/v1/query/web-analytics/visits/aggregate?${params}`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
 
     if (!response.ok) {
@@ -107,9 +107,9 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
   try {
     const responses = await Promise.allSettled(requests)
     const unavailableProjects = responses.flatMap((response, index) =>
-      response.status === 'rejected' ? [vercelProjects[index].name] : [],
+      response.status === 'rejected' ? [vercelProjects[index].name] : []
     )
-    const projects = responses.flatMap(response => {
+    const projects = responses.flatMap((response) => {
       if (response.status === 'rejected') {
         return []
       }
@@ -122,7 +122,14 @@ const getVercelTraffic = async (period: DashboardData['period']) => {
         visitors += point.visitors
       }
 
-      return [{ name: response.value.name, pageviews, series: response.value.series, visitors }]
+      return [
+        {
+          name: response.value.name,
+          pageviews,
+          series: response.value.series,
+          visitors,
+        },
+      ]
     })
 
     if (!projects.length) {
@@ -157,22 +164,25 @@ const getNpmDownloads = async () => {
 
   try {
     const packages = await Promise.all(
-      packageNames.map(async packageName => {
+      packageNames.map(async (packageName) => {
         const response = await fetch(
-          `https://api.npmjs.org/downloads/point/last-month/${encodeURIComponent(packageName)}`,
+          `https://api.npmjs.org/downloads/point/last-month/${encodeURIComponent(packageName)}`
         )
         if (!response.ok) {
           throw new Error(`npm returned ${response.status}.`)
         }
 
         return (await response.json()) as NpmDownloadsResponse
-      }),
+      })
     )
 
     return { error: null, packages }
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Unable to load npm downloads.',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unable to load npm downloads.',
       packages: [],
     }
   }
@@ -193,6 +203,10 @@ const loadDashboardData = async (): Promise<DashboardData> => {
   }
 }
 
-export const getDashboardData = unstable_cache(loadDashboardData, ['analytics-v3'], {
-  revalidate: 5 * 60,
-})
+export const getDashboardData = unstable_cache(
+  loadDashboardData,
+  ['analytics-v3'],
+  {
+    revalidate: 5 * 60,
+  }
+)

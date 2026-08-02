@@ -18,12 +18,12 @@ const summarizePoints = (points: TrafficPoint[]) =>
       pageviews: summary.pageviews + point.pageviews,
       visitors: summary.visitors + point.visitors,
     }),
-    { pageviews: 0, visitors: 0 },
+    { pageviews: 0, visitors: 0 }
   )
 
 export const summarizeTraffic = (
   projects: ProjectMetric[],
-  windowDays: TrafficWindowDays = 30,
+  windowDays: TrafficWindowDays = 30
 ): TrafficSummary => {
   const pointsByDate = new Map<string, TrafficPoint>()
 
@@ -39,7 +39,7 @@ export const summarizeTraffic = (
   }
 
   const series = [...pointsByDate.values()].sort((left, right) =>
-    left.timestamp.localeCompare(right.timestamp),
+    left.timestamp.localeCompare(right.timestamp)
   )
   const windowSeries = series.slice(-windowDays)
   const previousSeries = series.slice(-2 * windowDays, -windowDays)
@@ -47,7 +47,9 @@ export const summarizeTraffic = (
   return {
     ...summarizePoints(windowSeries),
     previous:
-      previousSeries.length === windowDays ? summarizePoints(previousSeries) : null,
+      previousSeries.length === windowDays
+        ? summarizePoints(previousSeries)
+        : null,
     series: windowSeries,
   }
 }
