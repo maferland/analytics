@@ -398,6 +398,7 @@ h1 {
 }
 
 .chart {
+  cursor: crosshair;
   display: block;
   height: auto;
   overflow: visible;

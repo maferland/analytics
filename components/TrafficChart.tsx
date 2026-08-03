@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { type PointerEvent, useState } from 'react'
 import type { TrafficPoint } from '@/lib/analytics'
 import { dateFormatter, formatNumber } from './dashboard-format'
 
@@ -36,6 +36,19 @@ const focusChartPoint = (svg: SVGSVGElement, index: number) => {
   svg.querySelectorAll<SVGCircleElement>('[role="button"]').item(index)?.focus()
 }
 
+const getPointIndexFromPointer = (
+  clientX: number,
+  bounds: DOMRect,
+  pointCount: number
+) => {
+  if (pointCount === 1 || !bounds.width) {
+    return 0
+  }
+
+  const relativeX = Math.min(Math.max(clientX - bounds.left, 0), bounds.width)
+  return Math.round((relativeX / bounds.width) * (pointCount - 1))
+}
+
 export function TrafficChart({ series }: TrafficChartProps) {
   const [activePointIndex, setActivePointIndex] = useState(0)
 
@@ -54,6 +67,16 @@ export function TrafficChart({ series }: TrafficChartProps) {
   const activeIndex = Math.min(activePointIndex, chartPoints.length - 1)
   const activePoint = chartPoints[activeIndex]
 
+  const updateActivePointFromPointer = (event: PointerEvent<SVGSVGElement>) => {
+    setActivePointIndex(
+      getPointIndexFromPointer(
+        event.clientX,
+        event.currentTarget.getBoundingClientRect(),
+        chartPoints.length
+      )
+    )
+  }
+
   return (
     <div className="chart-wrap">
       <div className="chart-summary">
@@ -69,6 +92,7 @@ export function TrafficChart({ series }: TrafficChartProps) {
       <svg
         aria-label="Daily pageviews for the selected period"
         className="chart"
+        onPointerMove={updateActivePointFromPointer}
         role="group"
         viewBox={`0 0 ${width} ${height}`}
       >
