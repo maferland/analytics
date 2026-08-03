@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { type PointerEvent, useState } from 'react'
 import type { TrafficPoint } from '@/lib/analytics'
 import { dateFormatter, formatNumber } from './dashboard-format'
 
 type TrafficChartProps = {
+  onActivePointChange: (point: TrafficPoint) => void
   series: TrafficPoint[]
 }
 
@@ -36,7 +37,23 @@ const focusChartPoint = (svg: SVGSVGElement, index: number) => {
   svg.querySelectorAll<SVGCircleElement>('[role="button"]').item(index)?.focus()
 }
 
-export function TrafficChart({ series }: TrafficChartProps) {
+const getPointIndexFromPointer = (
+  clientX: number,
+  bounds: DOMRect,
+  pointCount: number
+) => {
+  if (pointCount === 1 || !bounds.width) {
+    return 0
+  }
+
+  const relativeX = Math.min(Math.max(clientX - bounds.left, 0), bounds.width)
+  return Math.round((relativeX / bounds.width) * (pointCount - 1))
+}
+
+export function TrafficChart({
+  onActivePointChange,
+  series,
+}: TrafficChartProps) {
   const [activePointIndex, setActivePointIndex] = useState(0)
 
   if (!series.length) {
@@ -54,6 +71,22 @@ export function TrafficChart({ series }: TrafficChartProps) {
   const activeIndex = Math.min(activePointIndex, chartPoints.length - 1)
   const activePoint = chartPoints[activeIndex]
 
+  const setActivePoint = (index: number) => {
+    const nextIndex = Math.min(Math.max(index, 0), chartPoints.length - 1)
+    setActivePointIndex(nextIndex)
+    onActivePointChange(chartPoints[nextIndex].point)
+  }
+
+  const updateActivePointFromPointer = (event: PointerEvent<SVGSVGElement>) => {
+    setActivePoint(
+      getPointIndexFromPointer(
+        event.clientX,
+        event.currentTarget.getBoundingClientRect(),
+        chartPoints.length
+      )
+    )
+  }
+
   return (
     <div className="chart-wrap">
       <div className="chart-summary">
@@ -69,6 +102,7 @@ export function TrafficChart({ series }: TrafficChartProps) {
       <svg
         aria-label="Daily pageviews for the selected period"
         className="chart"
+        onPointerMove={updateActivePointFromPointer}
         role="group"
         viewBox={`0 0 ${width} ${height}`}
       >
@@ -98,12 +132,12 @@ export function TrafficChart({ series }: TrafficChartProps) {
             cx={x}
             cy={y}
             key={point.timestamp}
-            onClick={() => setActivePointIndex(index)}
-            onFocus={() => setActivePointIndex(index)}
+            onClick={() => setActivePoint(index)}
+            onFocus={() => setActivePoint(index)}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
-                setActivePointIndex(index)
+                setActivePoint(index)
                 return
               }
 
@@ -117,13 +151,13 @@ export function TrafficChart({ series }: TrafficChartProps) {
               }
 
               event.preventDefault()
-              setActivePointIndex(nextIndex)
+              setActivePoint(nextIndex)
               const chart = event.currentTarget.ownerSVGElement
               if (chart) {
                 focusChartPoint(chart, nextIndex)
               }
             }}
-            onPointerEnter={() => setActivePointIndex(index)}
+            onPointerEnter={() => setActivePoint(index)}
             r="7"
             role="button"
             tabIndex={0}
