@@ -160,9 +160,9 @@ footer,
 }
 
 .intro {
-  max-width: 50rem;
-  padding: clamp(var(--space-8), 12vw, 8rem) 0
-    clamp(var(--space-7), 9vw, var(--space-9));
+  max-width: 44rem;
+  padding: clamp(var(--space-6), 6vw, var(--space-8)) 0
+    clamp(var(--space-5), 4vw, var(--space-7));
 }
 
 .eyebrow {
@@ -184,11 +184,11 @@ h2,
 }
 
 h1 {
-  font-size: clamp(3.5rem, 9vw, 7rem);
+  font-size: clamp(3rem, 6.5vw, 5.5rem);
   letter-spacing: -0.075em;
-  line-height: 0.82;
-  margin-bottom: var(--space-5);
-  max-width: 42rem;
+  line-height: 0.86;
+  margin-bottom: var(--space-4);
+  max-width: 38rem;
 }
 
 .lede {
@@ -587,11 +587,11 @@ footer {
   }
 
   .intro {
-    padding: var(--space-8) 0 var(--space-7);
+    padding: var(--space-6) 0 var(--space-5);
   }
 
   h1 {
-    font-size: clamp(3.25rem, 16vw, 4.75rem);
+    font-size: clamp(2.75rem, 13vw, 4rem);
   }
 
   .control-deck,
