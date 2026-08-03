@@ -18,6 +18,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     data.traffic.projects.map((project) => project.name)
   )
   const [windowDays, setWindowDays] = useState<TrafficWindowDays>(30)
+  const [activeTrafficTimestamp, setActiveTrafficTimestamp] = useState<
+    string | null
+  >(null)
   const selectedProjects = data.traffic.projects.filter((project) =>
     selectedProjectNames.includes(project.name)
   )
@@ -26,6 +29,20 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     project,
     traffic: summarizeTraffic([project], windowDays),
   }))
+  const activeTrafficPoint =
+    traffic.series.find(
+      (point) => point.timestamp === activeTrafficTimestamp
+    ) ??
+    traffic.series[0] ??
+    null
+  const dailyProjectTraffic = activeTrafficPoint
+    ? selectedProjects.map((project) => ({
+        point: project.series.find(
+          (point) => point.timestamp === activeTrafficPoint.timestamp
+        ),
+        project,
+      }))
+    : []
   const selectedProject = projectTraffic.length === 1 ? projectTraffic[0] : null
   const busiestDay =
     selectedProject?.traffic.series.reduce<TrafficPoint | null>(
@@ -110,7 +127,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               {data.traffic.warning ? (
                 <p className="connection-note">{data.traffic.warning}</p>
               ) : null}
-              <TrafficChart series={traffic.series} />
+              <TrafficChart
+                onActivePointChange={(point) =>
+                  setActiveTrafficTimestamp(point.timestamp)
+                }
+                series={traffic.series}
+              />
             </>
           )}
         </section>
@@ -183,6 +205,43 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </p>
             )}
           </section>
+
+          {activeTrafficPoint ? (
+            <section
+              className="panel daily-project-detail"
+              aria-labelledby="daily-project-detail-title"
+            >
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Selected day</p>
+                  <h2 id="daily-project-detail-title">Daily app breakdown</h2>
+                </div>
+                <span>
+                  {dateFormatter.format(new Date(activeTrafficPoint.timestamp))}
+                </span>
+              </div>
+              <div className="data-table" role="table">
+                <div className="table-row table-heading" role="row">
+                  <span role="columnheader">Project</span>
+                  <span role="columnheader">Visitors</span>
+                  <span role="columnheader">Views</span>
+                </div>
+                {dailyProjectTraffic.map(({ point, project }) => (
+                  <div className="table-row" key={project.name} role="row">
+                    <span role="cell">
+                      <a href={project.url}>{project.name}</a>
+                    </span>
+                    <span role="cell">
+                      {formatNumber(point?.visitors ?? 0)}
+                    </span>
+                    <span role="cell">
+                      {formatNumber(point?.pageviews ?? 0)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {selectedProject ? (
             <section

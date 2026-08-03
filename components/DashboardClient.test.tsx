@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { DashboardClient } from './DashboardClient'
 
 const dashboardData = {
@@ -63,18 +63,28 @@ const dashboardData = {
   updatedAt: '2026-07-30T12:00:00.000Z',
 }
 
+afterEach(cleanup)
+
 describe('DashboardClient', () => {
   it('recalculates the traffic cards, chart, and table for selected projects', async () => {
     const user = userEvent.setup()
     render(<DashboardClient data={dashboardData} />)
 
+    const projectTable = screen.getByRole('region', {
+      name: 'Traffic by app',
+    })
+
     expect(screen.getByText('2,050')).toBeTruthy()
     expect(screen.getByText('1,550')).toBeTruthy()
-    expect(screen.getByRole('cell', { name: 'maferland.com' })).toBeTruthy()
-    expect(screen.getByRole('cell', { name: 'pinpoint' })).toBeTruthy()
+    expect(
+      within(projectTable).getByRole('cell', { name: 'maferland.com' })
+    ).toBeTruthy()
+    expect(
+      within(projectTable).getByRole('cell', { name: 'pinpoint' })
+    ).toBeTruthy()
 
     expect(
-      within(screen.getByRole('cell', { name: 'maferland.com' }))
+      within(within(projectTable).getByRole('cell', { name: 'maferland.com' }))
         .getByRole('link')
         .getAttribute('href')
     ).toBe('https://www.maferland.com')
@@ -96,8 +106,12 @@ describe('DashboardClient', () => {
     expect(
       screen.getByRole('article', { name: 'Selected visitors' }).textContent
     ).toContain('900')
-    expect(screen.getByRole('cell', { name: 'maferland.com' })).toBeTruthy()
-    expect(screen.queryByRole('cell', { name: 'pinpoint' })).toBeNull()
+    expect(
+      within(projectTable).getByRole('cell', { name: 'maferland.com' })
+    ).toBeTruthy()
+    expect(
+      within(projectTable).queryByRole('cell', { name: 'pinpoint' })
+    ).toBeNull()
     expect(
       screen
         .getByRole('group', { name: 'Daily pageviews for the selected period' })
@@ -111,5 +125,30 @@ describe('DashboardClient', () => {
         .getByRole('button', { name: '7 days' })
         .getAttribute('aria-pressed')
     ).toBe('true')
+  })
+
+  it('shows each selected app for the active chart day', async () => {
+    const user = userEvent.setup()
+    render(<DashboardClient data={dashboardData} />)
+
+    const dailyBreakdown = screen.getByRole('region', {
+      name: 'Daily app breakdown',
+    })
+
+    expect(dailyBreakdown.textContent).toContain('Jul 1')
+    expect(dailyBreakdown.textContent).toContain('400')
+    expect(dailyBreakdown.textContent).toContain('500')
+    expect(dailyBreakdown.textContent).toContain('250')
+    expect(dailyBreakdown.textContent).toContain('300')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Jul 2: 1,250 pageviews, 900 visitors',
+      })
+    )
+
+    expect(dailyBreakdown.textContent).toContain('Jul 2')
+    expect(dailyBreakdown.textContent).toContain('750')
+    expect(dailyBreakdown.textContent).toContain('400')
   })
 })

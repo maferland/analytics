@@ -467,6 +467,10 @@ h1 {
   grid-column: 1 / -1;
 }
 
+.daily-project-detail {
+  grid-column: 1 / -1;
+}
+
 .detail-metrics {
   border-top: var(--rule) solid var(--line);
   display: grid;

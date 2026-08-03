@@ -5,6 +5,7 @@ import type { TrafficPoint } from '@/lib/analytics'
 import { dateFormatter, formatNumber } from './dashboard-format'
 
 type TrafficChartProps = {
+  onActivePointChange: (point: TrafficPoint) => void
   series: TrafficPoint[]
 }
 
@@ -49,7 +50,10 @@ const getPointIndexFromPointer = (
   return Math.round((relativeX / bounds.width) * (pointCount - 1))
 }
 
-export function TrafficChart({ series }: TrafficChartProps) {
+export function TrafficChart({
+  onActivePointChange,
+  series,
+}: TrafficChartProps) {
   const [activePointIndex, setActivePointIndex] = useState(0)
 
   if (!series.length) {
@@ -67,8 +71,14 @@ export function TrafficChart({ series }: TrafficChartProps) {
   const activeIndex = Math.min(activePointIndex, chartPoints.length - 1)
   const activePoint = chartPoints[activeIndex]
 
+  const setActivePoint = (index: number) => {
+    const nextIndex = Math.min(Math.max(index, 0), chartPoints.length - 1)
+    setActivePointIndex(nextIndex)
+    onActivePointChange(chartPoints[nextIndex].point)
+  }
+
   const updateActivePointFromPointer = (event: PointerEvent<SVGSVGElement>) => {
-    setActivePointIndex(
+    setActivePoint(
       getPointIndexFromPointer(
         event.clientX,
         event.currentTarget.getBoundingClientRect(),
@@ -122,12 +132,12 @@ export function TrafficChart({ series }: TrafficChartProps) {
             cx={x}
             cy={y}
             key={point.timestamp}
-            onClick={() => setActivePointIndex(index)}
-            onFocus={() => setActivePointIndex(index)}
+            onClick={() => setActivePoint(index)}
+            onFocus={() => setActivePoint(index)}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
-                setActivePointIndex(index)
+                setActivePoint(index)
                 return
               }
 
@@ -141,13 +151,13 @@ export function TrafficChart({ series }: TrafficChartProps) {
               }
 
               event.preventDefault()
-              setActivePointIndex(nextIndex)
+              setActivePoint(nextIndex)
               const chart = event.currentTarget.ownerSVGElement
               if (chart) {
                 focusChartPoint(chart, nextIndex)
               }
             }}
-            onPointerEnter={() => setActivePointIndex(index)}
+            onPointerEnter={() => setActivePoint(index)}
             r="7"
             role="button"
             tabIndex={0}

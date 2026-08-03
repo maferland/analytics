@@ -26,7 +26,9 @@ const series = [
 describe('TrafficChart', () => {
   it('updates the inspector for the nearest point across the chart area', async () => {
     const user = userEvent.setup()
-    render(<TrafficChart series={series} />)
+    render(
+      <TrafficChart onActivePointChange={() => undefined} series={series} />
+    )
 
     const chart = screen.getByRole('group', {
       name: 'Daily pageviews for the selected period',
