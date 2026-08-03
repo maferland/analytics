@@ -215,8 +215,9 @@ const getNpmDownloads = async () => {
   }
 }
 
-const loadDashboardData = async (): Promise<DashboardData> => {
-  const period = getPeriod()
+const loadDashboardData = async (
+  period: DashboardData['period']
+): Promise<DashboardData> => {
   const [traffic, npm] = await Promise.all([
     getVercelTraffic(period),
     getNpmDownloads(),
@@ -230,10 +231,12 @@ const loadDashboardData = async (): Promise<DashboardData> => {
   }
 }
 
-export const getDashboardData = unstable_cache(
+const getCachedDashboardData = unstable_cache(
   loadDashboardData,
-  ['analytics-v4'],
+  ['analytics-v5'],
   {
     revalidate: 5 * 60,
   }
 )
+
+export const getDashboardData = () => getCachedDashboardData(getPeriod())
