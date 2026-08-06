@@ -17,6 +17,16 @@ const dashboardData = {
       },
     ],
   },
+  releases: {
+    error: null,
+    repositories: [
+      {
+        downloads: 24,
+        repository: 'termrocket',
+        url: 'https://github.com/maferland/termrocket',
+      },
+    ],
+  },
   period: { since: '2026-07-01', until: '2026-07-30' },
   traffic: {
     error: null,
@@ -88,6 +98,10 @@ describe('DashboardClient', () => {
         .getByRole('link')
         .getAttribute('href')
     ).toBe('https://www.maferland.com')
+    expect(
+      screen.getByRole('link', { name: 'termrocket' }).getAttribute('href')
+    ).toBe('https://github.com/maferland/termrocket')
+    expect(screen.getByText('24 all-time · 1 linked')).toBeTruthy()
     expect(
       screen
         .getByRole('link', { name: '@maferland/keyhole' })

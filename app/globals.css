@@ -498,7 +498,8 @@ h1 {
 }
 
 .data-table,
-.npm-list {
+.npm-list,
+.release-list {
   border-top: var(--rule) solid var(--line);
 }
 
