@@ -56,6 +56,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     (sum, packageMetric) => sum + packageMetric.downloads,
     0
   )
+  const releaseDownloads = data.releases.repositories.reduce(
+    (sum, repository) => sum + repository.downloads,
+    0
+  )
 
   const toggleProject = (projectName: string) => {
     setSelectedProjectNames((selectedNames) =>
@@ -206,6 +210,37 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             )}
           </section>
 
+          <section className="panel" aria-labelledby="releases-title">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Distribution</p>
+                <h2 id="releases-title">Release downloads</h2>
+              </div>
+              <span>
+                {formatNumber(releaseDownloads)} all-time ·{' '}
+                {data.releases.repositories.length} linked
+              </span>
+            </div>
+            {data.releases.repositories.length ? (
+              <div className="release-list">
+                {data.releases.repositories.map((repository) => (
+                  <div className="npm-row" key={repository.repository}>
+                    <a href={repository.url}>
+                      <code>{repository.repository}</code>
+                    </a>
+                    <strong>{formatNumber(repository.downloads)}</strong>
+                    <span>Published assets · current total</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-copy">
+                {data.releases.error ??
+                  'Release download totals appear after releases are linked.'}
+              </p>
+            )}
+          </section>
+
           {activeTrafficPoint ? (
             <section
               className="panel daily-project-detail"
@@ -294,7 +329,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         </div>
 
         <footer>
-          <span>Sources: Vercel Web Analytics · npm downloads</span>
+          <span>
+            Sources: Vercel Web Analytics · npm downloads · GitHub Releases
+          </span>
           <time dateTime={data.updatedAt}>
             Updated {timestampFormatter.format(new Date(data.updatedAt))}
           </time>

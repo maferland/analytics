@@ -23,6 +23,15 @@ type NpmDownloadsResponse = {
   start: string
 }
 
+type GitHubReleaseResponse = {
+  assets: Array<{ download_count: number }>
+}
+
+type ReleaseRepository = {
+  name: string
+  url: string
+}
+
 export type ProjectMetric = {
   name: string
   pageviews: number
@@ -31,10 +40,20 @@ export type ProjectMetric = {
   visitors: number
 }
 
+export type ReleaseDownloadMetric = {
+  downloads: number
+  repository: string
+  url: string
+}
+
 export type DashboardData = {
   npm: {
     error: string | null
     packages: NpmDownloadsResponse[]
+  }
+  releases: {
+    error: string | null
+    repositories: ReleaseDownloadMetric[]
   }
   period: {
     since: string
@@ -78,6 +97,13 @@ const vercelProjects: readonly VercelProject[] = [
     id: 'prj_jIhnT8qD2idQGjxdgcsFwJYYDdup',
     name: 'snip',
     url: 'https://snip.maferland.com',
+  },
+]
+
+const releaseRepositories: readonly ReleaseRepository[] = [
+  {
+    name: 'termrocket',
+    url: 'https://github.com/maferland/termrocket',
   },
 ]
 
@@ -215,17 +241,79 @@ const getNpmDownloads = async () => {
   }
 }
 
+export const sumReleaseDownloads = (
+  releases: readonly GitHubReleaseResponse[]
+) =>
+  releases.reduce(
+    (total, release) =>
+      total +
+      release.assets.reduce((assetTotal, asset) => {
+        return assetTotal + asset.download_count
+      }, 0),
+    0
+  )
+
+const getReleaseDownloads = async () => {
+  if (!releaseRepositories.length) {
+    return { error: null, repositories: [] }
+  }
+
+  const headers = new Headers({
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'maferland-analytics-dashboard',
+    'X-GitHub-Api-Version': '2026-03-10',
+  })
+  const token = process.env.GITHUB_TOKEN
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  try {
+    const repositories = await Promise.all(
+      releaseRepositories.map(async (repository) => {
+        const response = await fetch(
+          `https://api.github.com/repos/maferland/${repository.name}/releases?per_page=100`,
+          { headers }
+        )
+        if (!response.ok) {
+          throw new Error(`GitHub returned ${response.status}.`)
+        }
+
+        return {
+          downloads: sumReleaseDownloads(
+            (await response.json()) as GitHubReleaseResponse[]
+          ),
+          repository: repository.name,
+          url: repository.url,
+        }
+      })
+    )
+
+    return { error: null, repositories }
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unable to load release downloads.',
+      repositories: [],
+    }
+  }
+}
+
 const loadDashboardData = async (
   period: DashboardData['period']
 ): Promise<DashboardData> => {
-  const [traffic, npm] = await Promise.all([
+  const [traffic, npm, releases] = await Promise.all([
     getVercelTraffic(period),
     getNpmDownloads(),
+    getReleaseDownloads(),
   ])
 
   return {
     npm,
     period,
+    releases,
     traffic,
     updatedAt: new Date().toISOString(),
   }
