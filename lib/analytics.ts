@@ -79,6 +79,11 @@ const vercelProjects: readonly VercelProject[] = [
     name: 'snip',
     url: 'https://snip.maferland.com',
   },
+  {
+    id: 'prj_LDPAdeK5Pp8z0FyHuQD3oH8qe3tL',
+    name: 'burn',
+    url: 'https://burn.maferland.com',
+  },
 ]
 
 const millisecondsPerDay = 24 * 60 * 60 * 1000
