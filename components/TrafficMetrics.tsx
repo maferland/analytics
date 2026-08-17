@@ -2,16 +2,20 @@ import type { TrafficSummary, TrafficWindowDays } from '@/lib/traffic-summary'
 import { formatDelta, formatNumber } from './dashboard-format'
 
 type TrafficMetricsProps = {
+  githubDownloads: number
   npmDownloads: number
   packageCount: number
+  repoCount: number
   traffic: TrafficSummary
   trafficConnected: boolean
   windowDays: TrafficWindowDays
 }
 
 export function TrafficMetrics({
+  githubDownloads,
   npmDownloads,
   packageCount,
+  repoCount,
   traffic,
   trafficConnected,
   windowDays,
@@ -56,6 +60,16 @@ export function TrafficMetrics({
           {packageCount
             ? 'Configured packages · last month'
             : 'No packages connected'}
+        </span>
+      </article>
+      <article
+        aria-label="GitHub downloads"
+        className="metric-card metric-card-package"
+      >
+        <p>GitHub downloads</p>
+        <strong>{repoCount ? formatNumber(githubDownloads) : '—'}</strong>
+        <span>
+          {repoCount ? 'Configured repos · all time' : 'No repos connected'}
         </span>
       </article>
     </section>

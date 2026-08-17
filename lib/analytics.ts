@@ -23,6 +23,23 @@ type NpmDownloadsResponse = {
   start: string
 }
 
+export type RepoDownloads = {
+  downloads: number
+  name: string
+  url: string
+}
+
+type GithubReleasesResponse = {
+  data?: {
+    repository: {
+      releases: {
+        nodes: { releaseAssets: { nodes: { downloadCount: number }[] } }[]
+      }
+    } | null
+  }
+  errors?: { message: string }[]
+}
+
 export type ProjectMetric = {
   name: string
   pageviews: number
@@ -32,6 +49,10 @@ export type ProjectMetric = {
 }
 
 export type DashboardData = {
+  github: {
+    error: string | null
+    repos: RepoDownloads[]
+  }
   npm: {
     error: string | null
     packages: NpmDownloadsResponse[]
@@ -102,6 +123,92 @@ const getNpmPackages = () =>
     .split(/[\n,]/)
     .map((packageName) => packageName.trim())
     .filter(Boolean)
+
+const getGithubRepos = () =>
+  (process.env.ANALYTICS_GITHUB_REPOS ?? '')
+    .split(/[\n,]/)
+    .map((repo) => repo.trim())
+    .filter(Boolean)
+
+const githubReleasesQuery = `
+  query ($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) {
+      releases(first: 100) {
+        nodes {
+          releaseAssets(first: 20) {
+            nodes { downloadCount }
+          }
+        }
+      }
+    }
+  }
+`
+
+const getGithubDownloads = async () => {
+  const repoNames = getGithubRepos()
+  if (!repoNames.length) {
+    return { error: null, repos: [] }
+  }
+
+  const token = process.env.GITHUB_DOWNLOADS_TOKEN
+  if (!token) {
+    return { error: 'GitHub downloads are not yet connected.', repos: [] }
+  }
+
+  try {
+    const repos = await Promise.all(
+      repoNames.map(async (repoName) => {
+        const [owner, name] = repoName.split('/')
+        const response = await fetch('https://api.github.com/graphql', {
+          body: JSON.stringify({
+            query: githubReleasesQuery,
+            variables: { name, owner },
+          }),
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+        })
+
+        if (!response.ok) {
+          throw new Error(`GitHub returned ${response.status}.`)
+        }
+
+        const payload = (await response.json()) as GithubReleasesResponse
+        if (payload.errors?.length || !payload.data?.repository) {
+          throw new Error(payload.errors?.[0]?.message ?? 'Unknown repository.')
+        }
+
+        const downloads = payload.data.repository.releases.nodes.reduce(
+          (total, release) =>
+            total +
+            release.releaseAssets.nodes.reduce(
+              (assetTotal, asset) => assetTotal + asset.downloadCount,
+              0
+            ),
+          0
+        )
+
+        return {
+          downloads,
+          name: repoName,
+          url: `https://github.com/${repoName}`,
+        }
+      })
+    )
+
+    return { error: null, repos }
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unable to load GitHub downloads.',
+      repos: [],
+    }
+  }
+}
 
 const getVercelTraffic = async (period: DashboardData['period']) => {
   const token = process.env.VERCEL_ANALYTICS_TOKEN
@@ -223,12 +330,14 @@ const getNpmDownloads = async () => {
 const loadDashboardData = async (
   period: DashboardData['period']
 ): Promise<DashboardData> => {
-  const [traffic, npm] = await Promise.all([
+  const [traffic, npm, github] = await Promise.all([
     getVercelTraffic(period),
     getNpmDownloads(),
+    getGithubDownloads(),
   ])
 
   return {
+    github,
     npm,
     period,
     traffic,
@@ -238,7 +347,7 @@ const loadDashboardData = async (
 
 const getCachedDashboardData = unstable_cache(
   loadDashboardData,
-  ['analytics-v5'],
+  ['analytics-v6'],
   {
     revalidate: 5 * 60,
   }

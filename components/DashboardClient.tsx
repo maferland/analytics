@@ -56,6 +56,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     (sum, packageMetric) => sum + packageMetric.downloads,
     0
   )
+  const githubDownloads = data.github.repos.reduce(
+    (sum, repo) => sum + repo.downloads,
+    0
+  )
 
   const toggleProject = (projectName: string) => {
     setSelectedProjectNames((selectedNames) =>
@@ -101,8 +105,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         />
 
         <TrafficMetrics
+          githubDownloads={githubDownloads}
           npmDownloads={npmDownloads}
           packageCount={data.npm.packages.length}
+          repoCount={data.github.repos.length}
           traffic={traffic}
           trafficConnected={trafficConnected}
           windowDays={windowDays}
@@ -206,6 +212,35 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             )}
           </section>
 
+          <section className="panel" aria-labelledby="github-title">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Distribution</p>
+                <h2 id="github-title">GitHub downloads</h2>
+              </div>
+              <span>{data.github.repos.length} connected</span>
+            </div>
+            {data.github.error ? (
+              <p className="connection-note">{data.github.error}</p>
+            ) : data.github.repos.length ? (
+              <div className="npm-list">
+                {data.github.repos.map((repo) => (
+                  <div className="npm-row" key={repo.name}>
+                    <a href={repo.url}>
+                      <code>{repo.name}</code>
+                    </a>
+                    <strong>{formatNumber(repo.downloads)}</strong>
+                    <span>all releases</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-copy">
+                Repo totals appear after repos are selected.
+              </p>
+            )}
+          </section>
+
           {activeTrafficPoint ? (
             <section
               className="panel daily-project-detail"
@@ -294,7 +329,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         </div>
 
         <footer>
-          <span>Sources: Vercel Web Analytics · npm downloads</span>
+          <span>
+            Sources: Vercel Web Analytics · npm downloads · GitHub downloads
+          </span>
           <time dateTime={data.updatedAt}>
             Updated {timestampFormatter.format(new Date(data.updatedAt))}
           </time>
