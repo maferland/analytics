@@ -6,6 +6,16 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { DashboardClient } from './DashboardClient'
 
 const dashboardData = {
+  github: {
+    error: null,
+    repos: [
+      {
+        downloads: 58,
+        name: 'maferland/burn',
+        url: 'https://github.com/maferland/burn',
+      },
+    ],
+  },
   npm: {
     error: null,
     packages: [
