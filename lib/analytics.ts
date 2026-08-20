@@ -29,14 +29,14 @@ export type RepoDownloads = {
   url: string
 }
 
-type GithubReleasesResponse = {
-  data?: {
-    repository: {
-      releases: {
-        nodes: { releaseAssets: { nodes: { downloadCount: number }[] } }[]
-      }
-    } | null
+type GithubRepository = {
+  releases: {
+    nodes: { releaseAssets: { nodes: { downloadCount: number }[] } }[]
   }
+} | null
+
+type GithubReleasesResponse = {
+  data?: Record<string, GithubRepository> | null
   errors?: { message: string }[]
 }
 
@@ -52,6 +52,7 @@ export type DashboardData = {
   github: {
     error: string | null
     repos: RepoDownloads[]
+    warning: string | null
   }
   npm: {
     error: string | null
@@ -130,75 +131,121 @@ const getGithubRepos = () =>
     .map((repo) => repo.trim())
     .filter(Boolean)
 
-const githubReleasesQuery = `
-  query ($owner: String!, $name: String!) {
-    repository(owner: $owner, name: $name) {
-      releases(first: 100) {
-        nodes {
-          releaseAssets(first: 20) {
-            nodes { downloadCount }
-          }
-        }
+const releaseFieldsFragment = `
+  releases(first: 100) {
+    nodes {
+      releaseAssets(first: 20) {
+        nodes { downloadCount }
       }
     }
   }
 `
 
+// Aliased repository fields batch N repos into one request; a bad repo nulls only its own alias.
+const buildGithubReleasesQuery = (repoNames: readonly string[]) => {
+  const variableDefs = repoNames
+    .map((_, index) => `$owner${index}: String!, $name${index}: String!`)
+    .join(', ')
+  const fields = repoNames
+    .map(
+      (_, index) =>
+        `repo${index}: repository(owner: $owner${index}, name: $name${index}) { ${releaseFieldsFragment} }`
+    )
+    .join('\n')
+
+  return `query (${variableDefs}) { ${fields} }`
+}
+
+const sumDownloads = (repository: GithubRepository) =>
+  (repository?.releases.nodes ?? []).reduce(
+    (total, release) =>
+      total +
+      release.releaseAssets.nodes.reduce(
+        (assetTotal, asset) => assetTotal + asset.downloadCount,
+        0
+      ),
+    0
+  )
+
 const getGithubDownloads = async () => {
   const repoNames = getGithubRepos()
   if (!repoNames.length) {
-    return { error: null, repos: [] }
+    return { error: null, repos: [], warning: null }
   }
 
   const token = process.env.GITHUB_DOWNLOADS_TOKEN
   if (!token) {
-    return { error: 'GitHub downloads are not yet connected.', repos: [] }
+    return {
+      error: 'GitHub downloads are not yet connected.',
+      repos: [],
+      warning: null,
+    }
   }
 
+  const variables = repoNames.reduce<Record<string, string>>(
+    (acc, repoName, index) => {
+      const [owner, name] = repoName.split('/')
+      acc[`owner${index}`] = owner
+      acc[`name${index}`] = name
+      return acc
+    },
+    {}
+  )
+
   try {
-    const repos = await Promise.all(
-      repoNames.map(async (repoName) => {
-        const [owner, name] = repoName.split('/')
-        const response = await fetch('https://api.github.com/graphql', {
-          body: JSON.stringify({
-            query: githubReleasesQuery,
-            variables: { name, owner },
-          }),
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-        })
+    const response = await fetch('https://api.github.com/graphql', {
+      body: JSON.stringify({
+        query: buildGithubReleasesQuery(repoNames),
+        variables,
+      }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    })
 
-        if (!response.ok) {
-          throw new Error(`GitHub returned ${response.status}.`)
-        }
+    if (!response.ok) {
+      throw new Error(`GitHub returned ${response.status}.`)
+    }
 
-        const payload = (await response.json()) as GithubReleasesResponse
-        if (payload.errors?.length || !payload.data?.repository) {
-          throw new Error(payload.errors?.[0]?.message ?? 'Unknown repository.')
-        }
+    const payload = (await response.json()) as GithubReleasesResponse
+    if (!payload.data) {
+      throw new Error(payload.errors?.[0]?.message ?? 'Unknown response.')
+    }
 
-        const downloads = payload.data.repository.releases.nodes.reduce(
-          (total, release) =>
-            total +
-            release.releaseAssets.nodes.reduce(
-              (assetTotal, asset) => assetTotal + asset.downloadCount,
-              0
-            ),
-          0
-        )
+    const unavailableRepos: string[] = []
+    const repos = repoNames.flatMap((repoName, index) => {
+      const repository = payload.data?.[`repo${index}`] ?? null
+      if (!repository) {
+        unavailableRepos.push(repoName)
+        return []
+      }
 
-        return {
-          downloads,
+      return [
+        {
+          downloads: sumDownloads(repository),
           name: repoName,
           url: `https://github.com/${repoName}`,
-        }
-      })
-    )
+        },
+      ]
+    })
 
-    return { error: null, repos }
+    if (!repos.length) {
+      return {
+        error: 'GitHub downloads are temporarily unavailable.',
+        repos: [],
+        warning: null,
+      }
+    }
+
+    return {
+      error: null,
+      repos,
+      warning: unavailableRepos.length
+        ? `Downloads are unavailable for ${unavailableRepos.join(', ')}.`
+        : null,
+    }
   } catch (error) {
     return {
       error:
@@ -206,6 +253,7 @@ const getGithubDownloads = async () => {
           ? error.message
           : 'Unable to load GitHub downloads.',
       repos: [],
+      warning: null,
     }
   }
 }

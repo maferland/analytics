@@ -223,17 +223,22 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             {data.github.error ? (
               <p className="connection-note">{data.github.error}</p>
             ) : data.github.repos.length ? (
-              <div className="npm-list">
-                {data.github.repos.map((repo) => (
-                  <div className="npm-row" key={repo.name}>
-                    <a href={repo.url}>
-                      <code>{repo.name}</code>
-                    </a>
-                    <strong>{formatNumber(repo.downloads)}</strong>
-                    <span>all releases</span>
-                  </div>
-                ))}
-              </div>
+              <>
+                {data.github.warning ? (
+                  <p className="connection-note">{data.github.warning}</p>
+                ) : null}
+                <div className="npm-list">
+                  {data.github.repos.map((repo) => (
+                    <div className="npm-row" key={repo.name}>
+                      <a href={repo.url}>
+                        <code>{repo.name}</code>
+                      </a>
+                      <strong>{formatNumber(repo.downloads)}</strong>
+                      <span>all releases</span>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <p className="empty-copy">
                 Repo totals appear after repos are selected.

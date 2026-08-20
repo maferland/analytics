@@ -15,6 +15,7 @@ const dashboardData = {
         url: 'https://github.com/maferland/burn',
       },
     ],
+    warning: null,
   },
   npm: {
     error: null,
