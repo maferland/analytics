@@ -376,7 +376,9 @@ const getNpmDownloads = async () => {
 }
 
 const loadDashboardData = async (
-  period: DashboardData['period']
+  period: DashboardData['period'],
+  // Unused, but part of the cache key: keeps stale results from surviving a config change.
+  _configSignature: string
 ): Promise<DashboardData> => {
   const [traffic, npm, github] = await Promise.all([
     getVercelTraffic(period),
@@ -393,6 +395,9 @@ const loadDashboardData = async (
   }
 }
 
+const getConfigSignature = () =>
+  JSON.stringify({ github: getGithubRepos(), npm: getNpmPackages() })
+
 const getCachedDashboardData = unstable_cache(
   loadDashboardData,
   ['analytics-v6'],
@@ -401,4 +406,5 @@ const getCachedDashboardData = unstable_cache(
   }
 )
 
-export const getDashboardData = () => getCachedDashboardData(getPeriod())
+export const getDashboardData = () =>
+  getCachedDashboardData(getPeriod(), getConfigSignature())
