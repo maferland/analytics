@@ -60,6 +60,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     (sum, repo) => sum + repo.downloads,
     0
   )
+  const githubReposWithDownloads = data.github.repos
+    .filter((repo) => repo.downloads > 0)
+    .sort((a, b) => b.downloads - a.downloads)
 
   const toggleProject = (projectName: string) => {
     setSelectedProjectNames((selectedNames) =>
@@ -218,17 +221,17 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <p className="eyebrow">Distribution</p>
                 <h2 id="github-title">GitHub downloads</h2>
               </div>
-              <span>{data.github.repos.length} connected</span>
+              <span>{githubReposWithDownloads.length} with downloads</span>
             </div>
             {data.github.error ? (
               <p className="connection-note">{data.github.error}</p>
-            ) : data.github.repos.length ? (
+            ) : githubReposWithDownloads.length ? (
               <>
                 {data.github.warning ? (
                   <p className="connection-note">{data.github.warning}</p>
                 ) : null}
                 <div className="npm-list">
-                  {data.github.repos.map((repo) => (
+                  {githubReposWithDownloads.map((repo) => (
                     <div className="npm-row" key={repo.name}>
                       <a href={repo.url}>
                         <code>{repo.name}</code>
@@ -241,7 +244,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </>
             ) : (
               <p className="empty-copy">
-                Repo totals appear after repos are selected.
+                No tracked repo has any downloads yet.
               </p>
             )}
           </section>
